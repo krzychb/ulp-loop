@@ -43,19 +43,27 @@ entry:
 	and r0, r0, toggle_cycles
 	jump wake_up, eq
 
-	/* Toggle output */
+	/* Remove hold from GPIO17 output */
+	WRITE_RTC_REG(RTC_IO_TOUCH_PAD7_REG,RTC_IO_TOUCH_PAD7_HOLD_S,1,0)
+
+	/* Toge the GPIO17 output */
+	/* Toggle GPIO17 output */
 	and r0, r0, 0x01
 	jump toggle_clear, eq
 
-	/* Set toggle output */
+	/* Set the GPIO17 output */
 	WRITE_RTC_REG(RTC_GPIO_OUT_W1TS_REG,RTC_GPIO_OUT_DATA_W1TS_S+17,1,1)
-	halt
+	jump hold_pads
 
 	.global toggle_clear
 toggle_clear:
-	/* Clear toggle output */
+	/* Clear the GPIO17 output */
 	WRITE_RTC_REG(RTC_GPIO_OUT_W1TC_REG,RTC_GPIO_OUT_DATA_W1TC_S+17,1,1)
-	halt
+
+	.global hold_pads
+hold_pads:
+	/* Hold GPIO17 output */
+	WRITE_RTC_REG(RTC_IO_TOUCH_PAD7_REG,RTC_IO_TOUCH_PAD7_HOLD_S,1,1)
 
 	.global exit
 exit:

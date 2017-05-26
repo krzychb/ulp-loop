@@ -69,12 +69,15 @@ static void print_status()
 
 	printf("CPU / ULP toggle counter 0x%x / 0x%x\n", cpu_toggle_counter, ulp_toggle_counter & UINT16_MAX);
 
+	rtc_gpio_hold_dis(cpu_toggle_num);
     if (cpu_toggle_counter % 2 == 0) {
     	rtc_gpio_set_level(cpu_toggle_num, 0);
     }else{
     	rtc_gpio_set_level(cpu_toggle_num, 1);
     }
-    cpu_toggle_counter++;
+	rtc_gpio_hold_en(cpu_toggle_num);
+
+	cpu_toggle_counter++;
 }
 
 void app_main()
@@ -84,8 +87,10 @@ void app_main()
         printf("Not ULP wakeup, initializing ULP\n");
         init_ulp_program();
     } else {
+    	rtc_gpio_hold_dis(cpu_up_num);
     	rtc_gpio_set_level(cpu_up_num, 1);
-        printf("ULP wakeup, printing status\n");
+
+    	printf("ULP wakeup, printing status\n");
         print_status();
     }
 
@@ -93,6 +98,9 @@ void app_main()
     /* Start the ULP program */
     ESP_ERROR_CHECK( ulp_run((&ulp_entry - RTC_SLOW_MEM) / sizeof(uint32_t)));
     ESP_ERROR_CHECK( esp_deep_sleep_enable_ulp_wakeup() );
+
 	rtc_gpio_set_level(cpu_up_num, 0);
-    esp_deep_sleep_start();
+	rtc_gpio_hold_en(cpu_up_num);
+
+	esp_deep_sleep_start();
 }
