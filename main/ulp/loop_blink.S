@@ -39,14 +39,13 @@ entry:
 	/* Save */
 	st r0, r3, 0
 
-	/* Wake up SoC periodically */
+	/* Wake up SoC periodically every toggle_cycles */
 	and r0, r0, toggle_cycles
 	jump wake_up, eq
 
-	/* Remove hold from GPIO17 output */
+	/* Disable hold on GPIO17 output */
 	WRITE_RTC_REG(RTC_IO_TOUCH_PAD7_REG,RTC_IO_TOUCH_PAD7_HOLD_S,1,0)
 
-	/* Toge the GPIO17 output */
 	/* Toggle GPIO17 output */
 	and r0, r0, 0x01
 	jump toggle_clear, eq
@@ -62,7 +61,7 @@ toggle_clear:
 
 	.global hold_pads
 hold_pads:
-	/* Hold GPIO17 output */
+	/* Enable hold on GPIO17 output */
 	WRITE_RTC_REG(RTC_IO_TOUCH_PAD7_REG,RTC_IO_TOUCH_PAD7_HOLD_S,1,1)
 
 	.global exit

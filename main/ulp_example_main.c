@@ -87,7 +87,6 @@ void app_main()
         printf("Not ULP wakeup, initializing ULP\n");
         init_ulp_program();
     } else {
-    	rtc_gpio_hold_dis(cpu_up_num);
     	rtc_gpio_set_level(cpu_up_num, 1);
 
     	printf("ULP wakeup, printing status\n");
@@ -98,9 +97,6 @@ void app_main()
     /* Start the ULP program */
     ESP_ERROR_CHECK( ulp_run((&ulp_entry - RTC_SLOW_MEM) / sizeof(uint32_t)));
     ESP_ERROR_CHECK( esp_deep_sleep_enable_ulp_wakeup() );
-
 	rtc_gpio_set_level(cpu_up_num, 0);
-	rtc_gpio_hold_en(cpu_up_num);
-
 	esp_deep_sleep_start();
 }
