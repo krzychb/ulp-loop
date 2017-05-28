@@ -23,47 +23,67 @@
 toggle_counter:
 	.long 0
 
-	/* Number of resarts of ULP to wake up the main program.
+	/* Number of restarts of ULP to wake up the main program.
 	   See couple of lines below how this value is used */
-	.set toggle_cycles, 0b0000000000001111
+	.set toggle_cycles_to_wakeup, 0b0000000000000111
 
 	/* Code goes into .text section */
 	.text
 	.global entry
 entry:
+	/* Disable hold of RTC_GPIO10 output */
+	WRITE_RTC_REG(RTC_IO_TOUCH_PAD0_REG,RTC_IO_TOUCH_PAD0_HOLD_S,1,0)
+	/* Set the RTC_GPIO10 output HIGH
+	   to signal that ULP is now up */
+	WRITE_RTC_REG(RTC_GPIO_OUT_W1TS_REG,RTC_GPIO_OUT_DATA_W1TS_S+10,1,1)
+	/* Wait some cycles to have visible trace on the scope */
+	wait 1000
+
 	/* Read toggle counter */
 	move r3, toggle_counter
 	ld r0, r3, 0
 	/* Increment */
 	add r0, r0, 1
-	/* Save */
+	/* Save counter in memory */
 	st r0, r3, 0
+	/* Save counter in r3 to use it later */
+	move r3, r0
 
-	/* Wake up SoC periodically every toggle_cycles */
-	and r0, r0, toggle_cycles
-	jump wake_up, eq
-
-	/* Disable hold on GPIO17 output */
+	/* Disable hold of RTC_GPIO17 output */
 	WRITE_RTC_REG(RTC_IO_TOUCH_PAD7_REG,RTC_IO_TOUCH_PAD7_HOLD_S,1,0)
 
-	/* Toggle GPIO17 output */
+	/* Toggle RTC_GPIO17 output */
 	and r0, r0, 0x01
 	jump toggle_clear, eq
 
-	/* Set the GPIO17 output */
+	/* Set the RTC_GPIO17 output HIGH */
 	WRITE_RTC_REG(RTC_GPIO_OUT_W1TS_REG,RTC_GPIO_OUT_DATA_W1TS_S+17,1,1)
-	jump hold_pads
+	jump toggle_complete
 
 	.global toggle_clear
 toggle_clear:
-	/* Clear the GPIO17 output */
+	/* Set the RTC_GPIO17 output LOW (clear output) */
 	WRITE_RTC_REG(RTC_GPIO_OUT_W1TC_REG,RTC_GPIO_OUT_DATA_W1TC_S+17,1,1)
 
-	.global hold_pads
-hold_pads:
-	/* Enable hold on GPIO17 output */
+	.global toggle_complete
+toggle_complete:
+
+	/* Enable hold on RTC_GPIO17 output */
 	WRITE_RTC_REG(RTC_IO_TOUCH_PAD7_REG,RTC_IO_TOUCH_PAD7_HOLD_S,1,1)
 
+	/* Set the RTC_GPIO10 output LOW (clear output)
+	   to signal that ULP is now going down */
+	WRITE_RTC_REG(RTC_GPIO_OUT_W1TC_REG,RTC_GPIO_OUT_DATA_W1TC_S+10,1,1)
+
+	/* Enable hold on RTC_GPIO10 output */
+	WRITE_RTC_REG(RTC_IO_TOUCH_PAD0_REG,RTC_IO_TOUCH_PAD0_HOLD_S,1,1)
+
+	/* Compare the toggle counter with toggle cycles to wakeup SoC
+	   and wakup SoC if the values match */
+	and r0, r3, toggle_cycles_to_wakeup
+	jump wake_up, eq
+
+	/* Get ULP back to sleep */
 	.global exit
 exit:
 	halt
@@ -75,7 +95,7 @@ wake_up:
 	and r0, r0, 1
 	jump exit, eq
 
-	/* Wake up the SoC, end program */
+	/* Wake up the SoC and stop ULP program */
 	wake
 	/* Stop the wakeup timer so it does not restart ULP */
 	WRITE_RTC_FIELD(RTC_CNTL_STATE0_REG, RTC_CNTL_ULP_CP_SLP_TIMER_EN, 0)

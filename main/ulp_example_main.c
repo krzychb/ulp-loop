@@ -25,6 +25,7 @@ extern const uint8_t ulp_main_bin_end[]   asm("_binary_ulp_main_bin_end");
 
 
 gpio_num_t cpu_up_num = GPIO_NUM_25;
+gpio_num_t ulp_up_num = GPIO_NUM_4;
 
 gpio_num_t cpu_toggle_num = GPIO_NUM_26;
 gpio_num_t ulp_toggle_num = GPIO_NUM_27;
@@ -53,7 +54,10 @@ static void init_ulp_program()
     rtc_gpio_set_direction(cpu_up_num, RTC_GPIO_MODE_OUTPUT_ONLY);
 	rtc_gpio_set_level(cpu_up_num, 1);
 
-    rtc_gpio_init(cpu_toggle_num);
+    rtc_gpio_init(ulp_up_num);
+    rtc_gpio_set_direction(ulp_up_num, RTC_GPIO_MODE_OUTPUT_ONLY);
+
+	rtc_gpio_init(cpu_toggle_num);
     rtc_gpio_set_direction(cpu_toggle_num, RTC_GPIO_MODE_OUTPUT_ONLY);
 
     rtc_gpio_init(ulp_toggle_num);
