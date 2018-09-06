@@ -3,4 +3,4 @@ build
 .cproject
 .project
 *.old
-
+sdkconfig

@@ -8,7 +8,7 @@
 */
 
 #include <stdio.h>
-#include "esp_deep_sleep.h"
+#include "esp_sleep.h"
 #include "nvs.h"
 #include "nvs_flash.h"
 #include "soc/rtc_cntl_reg.h"
@@ -63,9 +63,9 @@ static void init_ulp_program()
     rtc_gpio_init(ulp_toggle_num);
     rtc_gpio_set_direction(ulp_toggle_num, RTC_GPIO_MODE_OUTPUT_ONLY);
 
-    /* Set ULP wake up period in cycles of RTC_SLOW_CLK clock @ 150 kHz).
+    /* Period in us of the ULP waking up
      */
-    REG_SET_FIELD(SENS_ULP_CP_SLEEP_CYC0_REG, SENS_SLEEP_CYCLES_S0, 1500);
+    ulp_set_wakeup_period(0, 10000);
 }
 
 static void print_status()
@@ -86,8 +86,8 @@ static void print_status()
 
 void app_main()
 {
-    esp_deep_sleep_wakeup_cause_t cause = esp_deep_sleep_get_wakeup_cause();
-    if (cause != ESP_DEEP_SLEEP_WAKEUP_ULP) {
+    esp_sleep_wakeup_cause_t cause = esp_sleep_get_wakeup_cause();
+    if (cause != ESP_SLEEP_WAKEUP_ULP) {
         printf("Not ULP wakeup, initializing ULP\n");
         init_ulp_program();
     } else {
@@ -100,7 +100,7 @@ void app_main()
     printf("Entering deep sleep\n\n");
     /* Start the ULP program */
     ESP_ERROR_CHECK( ulp_run((&ulp_entry - RTC_SLOW_MEM) / sizeof(uint32_t)));
-    ESP_ERROR_CHECK( esp_deep_sleep_enable_ulp_wakeup() );
+    ESP_ERROR_CHECK( esp_sleep_enable_ulp_wakeup() );
 	rtc_gpio_set_level(cpu_up_num, 0);
 	esp_deep_sleep_start();
 }
